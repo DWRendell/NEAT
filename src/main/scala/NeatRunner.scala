@@ -1,0 +1,3 @@
+class NeatRunner(problem: LearningProblem) {
+
+}

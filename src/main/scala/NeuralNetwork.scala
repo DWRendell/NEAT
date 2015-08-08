@@ -1,13 +1,14 @@
 import breeze.numerics.sigmoid
 
+import scala.util.Random
+
 case class NeuralNetwork(
-    nodes: List[Node],
-    connections: List[Connection]
+    inputs: Int,
+    outputs: Int,
+    connections: List[Connection] = Nil
  ) {
-  lazy val inputNodes =
-    nodes.filterNot(node => connections.exists(_.to == node))
-  lazy val outputNodes =
-    nodes.filterNot(node => connections.exists(_.from == node))
+  val inputNodes = (1 to inputs).map(Node).toList
+  val outputNodes = (1 to outputs).map(i => Node(i + inputs)).toList
 
   def apply(inputValues: Double*): List[Double] = {
     assert(inputValues.length == inputNodes.length)
@@ -41,57 +42,32 @@ case class NeuralNetwork(
   }
 
   def withNewConnection(connection: Connection) =
-    NeuralNetwork(nodes, connection :: connections)
+    NeuralNetwork(inputs, outputs, connection :: connections)
 
   def splitConnection(connection: Connection, newNode: Node) = {
-    assert(connections contains connection)
-    val newConnection1 = Connection(connection.from, newNode, connection.weight)
-    val newConnection2 = Connection(newNode, connection.to, connection.weight)
+    val oldConnection = connections.filter(c => c.from == connection.from && c.to == connection.to).head
+    val newConnection1 = connection.from connectTo newNode withWeight 1.0
+    val newConnection2 = newNode connectTo connection.to withWeight oldConnection.weight
     NeuralNetwork(
-      newNode :: nodes,
-      newConnection1 :: newConnection2 :: connections.filterNot(_ == connection))
+      inputs,
+      outputs,
+      newConnection1 :: newConnection2 :: connections.filterNot(_ == oldConnection))
   }
 
-  def replaceNode(oldNode: Node, newNode: Node) = {
-    val newNodes = nodes.map {node =>
-      if (node == oldNode) newNode
-      else node
-    }
-    val newConnections = connections.map {
-      case Connection(from, to, _) if from == oldNode => Connection(newNode, to)
-    }.map {
-      case Connection(from, to, _) if to == oldNode => Connection(from, newNode)
-    }
-    NeuralNetwork(newNodes, newConnections)
-  }
-
-  private def getNodesConnectedTo(node: Node) =
-    connections
-      .filter(_.to == node)
-      .map(_.from)
-  private def getNodesConnectedFrom(node: Node) =
-    connections
-      .filter(_.from == node)
-      .map(_.to)
-
-  def getConnectionDiagram = {
-    nodes.map(i => nodes.map(j =>
-      if (getNodesConnectedTo(i) contains j) "F"
-      else if (getNodesConnectedFrom(i) contains j) "T"
-      else " ").mkString(",")).mkString("\n")
-  }
+  override def toString = "Connections:\n" + connections.reverse.map(_.toString).mkString(",\n")
 }
 
 case class Node(id: Int) {
   def connectTo(to: Node) = Connection(this, to)
+  override def toString = s"Node $id"
 }
 
 case class Connection(from: Node, to: Node, weight: Double = 1.0) {
   def withWeight(newWeight: Double) = Connection(from, to, newWeight)
+  def withRandomWeight = withWeight(new Random().nextDouble())
+  override def toString = s"$from is connected to $to with weight $weight}"
 }
 
 object NeuralNetwork {
   val biasNode = Node(0)
-
-
 }
