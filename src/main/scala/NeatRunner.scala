@@ -1,3 +1,0 @@
-class NeatRunner(problem: LearningProblem) {
-
-}

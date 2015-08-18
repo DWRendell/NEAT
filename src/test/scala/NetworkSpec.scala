@@ -1,11 +1,21 @@
-object NetworkSpec extends App {
-  val input1 = Node(1)
-  val input2 = Node(2)
-  val output = Node(3)
-  val connection1 = input1 connectTo output
-  val connection2 = input2 connectTo output
-  val network = NeuralNetwork(2, 1)
+import org.specs2.mutable.Specification
 
-  val problem = new XorLearningProblem
-  println(problem.measureFitness(network))
+class NetworkSpec extends Specification {
+  "Network" should {
+    "be created" in {
+      val network =
+        new Network(inputs = 3, outputs = 1)
+          .withConnection(Connection(InputNode(1), OutputNode(4)))
+          .withConnection(Connection(InputNode(3), OutputNode(4)))
+          .splitConnection(Connection(InputNode(1), OutputNode(4)), HiddenNode(5))
+          .withConnection(Connection(InputNode(2), HiddenNode(5)))
+      //println(network)
+      network must beAnInstanceOf[Network]
+    }
+
+    "output values" in {
+      val network = new Network(1, 1).withConnection(Connection(InputNode(1), OutputNode(2)))
+      network(1.0) mustEqual Seq(1.0)
+    }
+  }
 }
